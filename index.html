@@ -347,6 +347,12 @@ const PWD='Drainvestidora123';
 const R={PRODUTO:0,STATUS_COMPRA:1,TIPO_ALUNO:2,STATUS_CLUB:3,FUNIL:4,PROG:5,AULAS:6,TOTAL_AULAS:7,ACESSOU:8,QTD_ACESSOS:9,DT_COMPRA:10,ULT_ACESSO:11,VALOR:12,EMAIL:13,DT_APROV:14,PRIM_ACESSO:15,NOME:16};
 
 const fmtN=n=>n.toLocaleString('pt-BR');
+function helpQ(def){return '<span onmouseenter="hqShow(event,'+def+')" onmousemove="hqShow(event,'+def+')" onmouseleave="hqHide()" style="display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;border-radius:50%;border:1px solid var(--t3);color:var(--t3);font-size:11px;font-weight:700;cursor:help;margin-left:8px;vertical-align:middle">?</span>';}
+var _HQT;function hqTip(){if(!_HQT){_HQT=document.createElement('div');_HQT.style.cssText='position:fixed;z-index:9999;pointer-events:none;background:rgba(15,15,15,.96);color:#fff;border:1px solid rgba(255,255,255,.12);border-radius:12px;padding:12px 14px;max-width:300px;font-size:12px;opacity:0;transition:opacity .15s;box-shadow:0 12px 40px rgba(0,0,0,.5)';document.body.appendChild(_HQT);}return _HQT;}
+function hqShow(e,html){var t=hqTip();t.innerHTML=html;t.style.opacity='1';t.style.left=Math.min(e.clientX+14,window.innerWidth-320)+'px';t.style.top=Math.max(e.clientY-60,8)+'px';}
+function hqHide(){if(_HQT)_HQT.style.opacity='0';}
+var FUNIL_DEF='<div style="font-weight:700;margin-bottom:6px">Como lemos o funil</div><div style="font-size:11px;line-height:1.8;text-align:left"><b style=color:#f87171>Nunca acessou</b>: comprou mas nunca fez login.<br><b style=color:#fb923c>Acessou mas não consumiu</b>: logou mas está com 0% de progresso.<br><b style=color:#fbbf24>Consumiu pouco</b>: progresso abaixo de 10% e +30 dias sem acessar.<br><b style=color:#f472b6>Desengajado</b>: progresso de 10% a 40% e +30 dias sem acessar.<br><b style=color:#2dd4bf>Engajado</b>: acessou nos últimos 30 dias (progresso até 40%).<br><b style=color:#34d399>Recompra</b>: progresso de 40% ou mais (perfil que costuma renovar).</div>';
+function inatHbar(a){var it=[['0-14 dias',(a.faixaDias['0-14d']||0),'var(--green)'],['15-30 dias',(a.faixaDias['15-30d']||0),'var(--gold)'],['31-60 dias',(a.faixaDias['31-60d']||0),'var(--orange)'],['>60 dias',(a.faixaDias['>60d']||0),'var(--red)'],['Nunca acessou',(a.nuncaAcessou||0),'var(--pink)']];var t=it.reduce(function(s,x){return s+x[1];},0);var mx=Math.max.apply(null,it.map(function(x){return x[1];}).concat([1]));var h='';it.forEach(function(x){var w=Math.max(Math.round(x[1]/mx*100),3);var p=t?(x[1]/t*100):0;h+='<div class="hbar-row"><span class="hbar-lbl">'+x[0]+'</span><div class="hbar-track"><div class="hbar-fill" style="width:'+w+'%;background:'+x[2]+'">'+fmtN(x[1])+'</div></div><span style="font-family:JetBrains Mono;font-weight:700;font-size:14px;color:var(--t3);min-width:56px;text-align:right">'+p.toFixed(1).replace(".",",")+" %"+'</span></div>';});return h;}
 const fmtR=n=>'R$ '+Math.round(n).toLocaleString('pt-BR');
 const fmtRS=n=>{if(n>=1000000)return'R$ '+(n/1000000).toFixed(1).replace('.',',')+' M';return fmtR(n);};
 const fmtP=n=>n.toFixed(1).replace('.',',')+' %';
@@ -531,7 +537,7 @@ function renderAll(rows){
   }
 
   // Jornada do Aluno (Funil)
-  h1+='<div class="sec">📊 Jornada do Aluno</div>';
+  h1+='<div class="sec">📊 Jornada do Aluno'+helpQ('FUNIL_DEF')+'</div>';
   const fd=funilOrder.map(f=>a.funil[f]||0);const mxF=Math.max(...fd,1);
   h1+='<div class="g2"><div class="card"><h3>Distribuição da Jornada</h3><div class="d">Classificação por progresso e acesso</div><div class="chart"><div class="chart-bars">';
   funilOrder.forEach((f,i)=>{const q=fd[i];const hh=Math.round(q/mxF*90);const pc=a.total>0?q/a.total*100:0;h1+='<div class="bar" style="height:'+hh+'%;background:'+funilColors[i]+'"><span style="position:absolute;top:-22px;left:50%;transform:translateX(-50%);font-size:11px;font-family:JetBrains Mono;font-weight:600;color:var(--t1);white-space:nowrap">'+pc.toFixed(1)+'%</span><span class="tt">'+f+': '+q+' ('+fmtP(pc)+')</span></div>';});
@@ -610,7 +616,8 @@ function renderAll(rows){
   h2+='<div class="card"><h3>Acesso ao Curso</h3><div class="d">Acessaram vs nunca acessaram</div><div class="donut-area">'+donutHTML('var(--teal)',degAc,'var(--red)',fmtP(pctAcessou),'acessou','Acessou: '+a.acessou+' ('+fmtP(pctAcessou)+') · Nunca: '+a.nuncaAcessou+' ('+fmtP(pctNunca)+')','Acessou',a.acessou,'var(--teal)','Nunca',a.nuncaAcessou,'var(--red)')+'</div></div>';
   const d60=a.faixaDias['>60d']||0;const d31=a.faixaDias['31-60d']||0;const d15=a.faixaDias['15-30d']||0;const d0=a.faixaDias['0-14d']||0;
   const pD60=a.total>0?d60/a.total*100:0;const degD=Math.round((100-pD60)/100*360);
-  h2+='<div class="card"><h3>Dias sem Acesso</h3><div class="d">Distribuição por faixa de inatividade</div><div class="donut-area">'+donutHTML('var(--sky)',degD,'var(--red)',fmtP(pD60),'>60 dias','0-14d: '+d0+' · 15-30d: '+d15+' · 31-60d: '+d31+' · >60d: '+d60,'<60d',(a.total-d60),'var(--sky)','>60d',d60,'var(--red)')+'</div></div></div>';
+  h2+='</div>';
+  h2+='<div class="card" style="margin-top:24px"><h3>Inatividade</h3><div class="d">Dias desde o último acesso</div><div class="hbar-area" style="height:auto">'+inatHbar(a)+'</div></div>';
 
   // Insights Engajamento
   h2+='<div class="sec">💡 Insights — Engajamento</div><div class="ins-g">';
